@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CRUD Application using JavaScript</title>
+    <style>
+        table {
+            width: 100%;
+            font: 17px Calibri;
+        }
+
+        table, th, td {
+            border: solid 1px #DDD;
+            border-collapse: collapse;
+            padding: 2px 3px;
+            text-align: center;
+        }
+
+        input[type='button'] {
+            font: 15px Calibri;
+            cursor: pointer;
+            border: none;
+            color: #FFF;
+        }
+
+        input[type='text'], select {
+            font: 17px Calibri;
+            text-align: center;
+            border: solid 1px #CCC;
+            width: auto;
+            padding: 2px 3px;
+        }
+    </style>
+</head>
+<body>
+<div id="container" style="width:700px;">
+</div>
+</body>
+
+<script>
+
+    var crudApp = new function () {
+
+        // AN ARRAY OF JSON OBJECTS WITH VALUES.
+        this.answers = [
+            {mail: 'Your mail', phoneNumber: 'Your phone number', age: "Your age"}
+        ];
+        this.col = [];
+
+        this.createTable = async function () {
+
+            // EXTRACT VALUE FOR TABLE HEADER.
+
+            for (var i = 0; i < this.answers.length; i++) {
+                for (var key in this.answers[i]) {
+                    if (this.col.indexOf(key) === -1) {
+                        this.col.push(key);
+                    }
+                }
+            }
+
+            // CREATE A TABLE.
+            var table = document.createElement('table');
+            table.setAttribute('id', 'answersTable');     // SET TABLE ID.
+
+            let tr = table.insertRow(-1);               // CREATE A ROW (FOR HEADER).
+            let questions = [
+                {mail: 'Your mail', phoneNumber: 'Your phone number', age: "Your age"}
+            ];
+            for (let h = 0; h < this.col.length; h++) {
+                // ADD TABLE HEADER.
+                let th = document.createElement('th');
+                th.innerHTML = questions[0][this.col[h]];
+                tr.appendChild(th);
+            }
+            let myJson;
+            try {
+                const response = await fetch('http://localhost:8085/v1/answers');
+                myJson = await response.json();
+            } catch (error) {
+                console.log(error);
+            }
+            this.answers = myJson.answers;
+
+
+            // ADD ROWS USING JSON DATA.
+            for (let i = 0; i < this.answers.length; i++) {
+
+                tr = table.insertRow(-1);           // CREATE A NEW ROW.
+
+                for (let j = 0; j < this.col.length; j++) {
+                    let tabCell = tr.insertCell(-1);
+                    tabCell.innerHTML = this.answers[i][this.col[j]];
+                }
+
+                // DYNAMICALLY CREATE AND ADD ELEMENTS TO TABLE CELLS WITH EVENTS.
+
+                this.td = document.createElement('td');
+
+                // *** CANCEL OPTION.
+                tr.appendChild(this.td);
+                let lblCancel = document.createElement('label');
+                lblCancel.innerHTML = 'X';
+                lblCancel.setAttribute('onclick', 'crudApp.Cancel(this)');
+                lblCancel.setAttribute('style', 'display:none;');
+                lblCancel.setAttribute('title', 'Cancel');
+                lblCancel.setAttribute('id', 'lbl' + i);
+                this.td.appendChild(lblCancel);
+
+                // *** SAVE.
+                tr.appendChild(this.td);
+                let btSave = document.createElement('input');
+
+                btSave.setAttribute('type', 'button');      // SET ATTRIBUTES.
+                btSave.setAttribute('value', 'Save');
+                btSave.setAttribute('id', 'Save' + i);
+                btSave.setAttribute('style', 'display:none;');
+                btSave.setAttribute('onclick', 'crudApp.Save(this)');       // ADD THE BUTTON's 'onclick' EVENT.
+                this.td.appendChild(btSave);
+
+                // *** UPDATE.
+                tr.appendChild(this.td);
+                let btUpdate = document.createElement('input');
+
+                btUpdate.setAttribute('type', 'button');    // SET ATTRIBUTES.
+                btUpdate.setAttribute('value', 'Update');
+                btUpdate.setAttribute('id', 'Edit' + i);
+                btUpdate.setAttribute('style', 'background-color:#44CCEB;');
+                btUpdate.setAttribute('onclick', 'crudApp.Update(this)');   // ADD THE BUTTON's 'onclick' EVENT.
+                this.td.appendChild(btUpdate);
+
+                // *** DELETE.
+                this.td = document.createElement('th');
+                tr.appendChild(this.td);
+                let btDelete = document.createElement('input');
+                btDelete.setAttribute('type', 'button');    // SET INPUT ATTRIBUTE.
+                btDelete.setAttribute('value', 'Delete');
+                btDelete.setAttribute('style', 'background-color:#ED5650;');
+                btDelete.setAttribute('onclick', 'crudApp.Delete(this)');   // ADD THE BUTTON's 'onclick' EVENT.
+                this.td.appendChild(btDelete);
+            }
+
+
+            tr = table.insertRow(-1);           // CREATE THE LAST ROW.
+
+            for (let j = 0; j < this.col.length; j++) {
+                let newCell = tr.insertCell(-1);
+
+                let tBox = document.createElement('input');          // CREATE AND ADD A TEXTBOX.
+                tBox.setAttribute('type', 'text');
+                tBox.setAttribute('value', '');
+                newCell.appendChild(tBox);
+
+            }
+
+            this.td = document.createElement('td');
+            tr.appendChild(this.td);
+
+            let btNew = document.createElement('input');
+
+            btNew.setAttribute('type', 'button');       // SET ATTRIBUTES.
+            btNew.setAttribute('value', 'Create');
+            btNew.setAttribute('id', 'New' + i);
+            btNew.setAttribute('style', 'background-color:#207DD1;');
+            btNew.setAttribute('onclick', 'crudApp.CreateNew(this)');       // ADD THE BUTTON's 'onclick' EVENT.
+            this.td.appendChild(btNew);
+
+            let div = document.getElementById('container');
+            div.innerHTML = '';
+            div.appendChild(table);    // ADD THE TABLE TO THE WEB PAGE.
+        };
+
+        // CANCEL.
+        this.Cancel = function (oButton) {
+
+            // HIDE THIS BUTTON.
+            oButton.setAttribute('style', 'display:none; float:none;');
+
+            let activeRow = oButton.parentNode.parentNode.rowIndex;
+
+            // HIDE THE SAVE BUTTON.
+            let btSave = document.getElementById('Save' + (activeRow - 1));
+            btSave.setAttribute('style', 'display:none;');
+
+            // SHOW THE UPDATE BUTTON AGAIN.
+            let btUpdate = document.getElementById('Edit' + (activeRow - 1));
+            btUpdate.setAttribute('style', 'display:block; margin:0 auto; background-color:#44CCEB;');
+
+            let tab = document.getElementById('answersTable').rows[activeRow];
+
+            for (i = 0; i < this.col.length; i++) {
+                let td = tab.getElementsByTagName("td")[i];
+                td.innerHTML = this.answers[(activeRow - 1)][this.col[i]];
+            }
+        }
+
+        // EDIT DATA.
+        this.Update = function (oButton) {
+            let activeRow = oButton.parentNode.parentNode.rowIndex;
+            let tab = document.getElementById('answersTable').rows[activeRow];
+
+            for (i = 0; i < 3; i++) {
+                let td = tab.getElementsByTagName("td")[i];
+                let ele = document.createElement('input');      // TEXTBOX.
+                ele.setAttribute('type', 'text');
+                ele.setAttribute('value', td.innerText);
+                td.innerText = '';
+                td.appendChild(ele);
+            }
+
+            let lblCancel = document.getElementById('lbl' + (activeRow - 1));
+            lblCancel.setAttribute('style', 'cursor:pointer; display:block; width:20px; float:left; position: absolute;');
+
+            let btSave = document.getElementById('Save' + (activeRow - 1));
+            btSave.setAttribute('style', 'display:block; margin-left:30px; float:left; background-color:#2DBF64;');
+
+            // HIDE THIS BUTTON.
+            oButton.setAttribute('style', 'display:none;');
+        };
+
+        // DELETE DATA.
+        this.Delete = async function (oButton) {
+            let activeRow = oButton.parentNode.parentNode.rowIndex;
+
+            let tab = document.getElementById('answersTable').rows[activeRow];
+            let obj =
+                {
+                    mail: tab.getElementsByTagName("td")[0].innerText,
+                    phoneNumber: tab.getElementsByTagName("td")[1].innerText,
+                    age: tab.getElementsByTagName("td")[2].innerText
+                };
+
+            let myJson;
+            try {
+                const response = await fetch('http://localhost:8085/v1/answers', {
+                    method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
+                    mode: 'cors', // no-cors, *cors, same-origin
+                    cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+                    credentials: 'same-origin', // include, *same-origin, omit
+                    headers: {
+                        'Content-Type': 'application/json'
+                        // 'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    redirect: 'follow', // manual, *follow, error
+                    referrer: 'no-referrer', // no-referrer, *client
+                    body: JSON.stringify(obj) // body data type must match "Content-Type" header
+                });
+                await response.json();
+            } catch (error) {
+                console.log(error);
+            }
+
+            this.createTable();                         // REFRESH THE TABLE.
+        };
+
+        // SAVE DATA.
+        this.Save = async function (oButton) {
+            let activeRow = oButton.parentNode.parentNode.rowIndex;
+            let tab = document.getElementById('answersTable').rows[activeRow];
+            let obj = {
+                mail: tab.getElementsByTagName("td")[0].childNodes[0].value,
+                phoneNumber: tab.getElementsByTagName("td")[1].childNodes[0].value,
+                age: tab.getElementsByTagName("td")[2].childNodes[0].value
+            };
+
+            let myJson;
+            try {
+                const response = await fetch('http://localhost:8085/v1/answers', {
+                    method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+                    mode: 'cors', // no-cors, *cors, same-origin
+                    cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+                    credentials: 'same-origin', // include, *same-origin, omit
+                    headers: {
+                        'Content-Type': 'application/json'
+                        // 'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    redirect: 'follow', // manual, *follow, error
+                    referrer: 'no-referrer', // no-referrer, *client
+                    body: JSON.stringify(obj) // body data type must match "Content-Type" header
+                });
+                await response.json();
+            } catch (error) {
+                console.log(error);
+            }
+
+            this.createTable();     // REFRESH THE TABLE.
+        }
+
+        // CREATE NEW.
+        this.CreateNew = async function (oButton) {
+            let activeRow = oButton.parentNode.parentNode.rowIndex;
+            var tab = document.getElementById('answersTable').rows[activeRow];
+            let obj = {};
+
+            for (let i = 0; i < this.col.length; i++) {
+                let td = tab.getElementsByTagName("td")[i];
+                if (td.childNodes[0].getAttribute('type') == 'text') {
+                    let txtVal = td.childNodes[0].value;
+                    if (txtVal == '') {
+                        obj = '';
+                        alert('all fields are compulsory');
+                        return;
+                    }
+                }
+            }
+
+            var tab = document.getElementById('answersTable').rows[activeRow];
+            obj = {
+                mail: tab.getElementsByTagName("td")[0].childNodes[0].value,
+                phoneNumber: tab.getElementsByTagName("td")[1].childNodes[0].value,
+                age: tab.getElementsByTagName("td")[2].childNodes[0].value
+            };
+            if (Object.keys(obj).length > 0) {      // CHECK IF OBJECT IS NOT EMPTY.
+                let myJson;
+                try {
+                    const response = await fetch('http://localhost:8085/v1/answers', {
+                        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+                        headers: {
+                            'Content-Type': 'application/json'
+                            // 'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: JSON.stringify(obj) // body data type must match "Content-Type" header
+                    });
+                    myJson = await response.json();
+                    if (response.status == 400) {
+                        alert(myJson.errors);
+                    }
+                } catch (error) {
+                    console.log(error);
+                }
+
+                this.createTable();                 // REFRESH THE TABLE.
+            }
+        }
+
+        // ****** OPERATIONS END.
+    }
+
+    crudApp.createTable();
+</script>
+</html>

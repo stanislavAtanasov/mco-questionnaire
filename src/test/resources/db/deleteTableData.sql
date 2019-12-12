@@ -1,0 +1,1 @@
+DELETE FROM USER WHERE MAIL IN ('in@gmail.com', 'in2@gmail.com');
